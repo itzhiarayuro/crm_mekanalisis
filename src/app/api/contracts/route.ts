@@ -8,7 +8,7 @@ import { convertDocxToPdf } from "@/lib/converter";
 import { sha256 } from "@/lib/crypto";
 import { appendEvent } from "@/lib/audit";
 
-const schema = z.object({ title: z.string().trim().min(3).max(200), clientId: z.uuid(), quoteId: z.uuid().optional().nullable(), uploadPath: z.string().regex(/^uploads\/[a-f0-9-]+\/original\.docx$/) });
+const schema = z.object({ title: z.string().trim().min(3).max(200), clientId: z.uuid(), quoteId: z.uuid().optional().nullable(), isTest: z.boolean().optional(), uploadPath: z.string().regex(/^uploads\/[a-f0-9-]+\/original\.docx$/) });
 
 type ContractClientRelation = {
   nombre: string;
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       if (quoteError || !quote) throw new Error("La cotización no pertenece al cliente seleccionado");
     }
     const { data: contract, error } = await supabase.from("contracts").insert({
-      client_id: body.clientId, cotizacion_id: body.quoteId || null, title: body.title, status: "PROCESSING", signer_name: client.nombre,
+      client_id: body.clientId, cotizacion_id: body.quoteId || null, title: body.title, status: "PROCESSING", is_test: body.isTest === true, signer_name: client.nombre,
       signer_email: client.email, original_path: body.uploadPath,
     }).select().single();
     if (error) throw new Error(error.message);

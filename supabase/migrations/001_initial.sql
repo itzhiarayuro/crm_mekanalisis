@@ -17,6 +17,8 @@ create table if not exists contracts (
   cotizacion_id uuid references cotizaciones(id) on delete set null,
   title text not null,
   status contract_status not null default 'DRAFT',
+  -- Test contracts may be erased after signing. Real contracts are retained as evidence.
+  is_test boolean not null default false,
   -- A signing snapshot is populated from clientes when the contract is created.
   signer_name text not null,
   signer_email text,

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAdminRequest } from "@/lib/auth";
 import { apiError } from "@/lib/http";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin, removeBlobs } from "@/lib/supabase";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -22,8 +22,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await requireAdminRequest(request);
     const { id } = await params;
     const supabase = getSupabaseAdmin();
-    const { data } = await supabase.from("contracts").select("status").eq("id", id).single();
-    if (!data || !["DRAFT", "FAILED"].includes(data.status)) throw new Error("Solo pueden borrarse borradores o conversiones fallidas");
+    const { data } = await supabase.from("contracts").select("status,is_test,original_path,pdf_path,signed_path").eq("id", id).single();
+    if (!data || (!data.is_test && !["DRAFT", "FAILED"].includes(data.status))) throw new Error("Solo se pueden borrar contratos de prueba o conversiones fallidas");
+    await removeBlobs([data.original_path, data.pdf_path, data.signed_path]);
     const { error } = await supabase.from("contracts").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return Response.json({ ok: true });

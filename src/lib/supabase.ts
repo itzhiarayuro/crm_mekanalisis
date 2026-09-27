@@ -28,3 +28,10 @@ export async function uploadBlob(path: string, bytes: Buffer, contentType: strin
   });
   if (error) throw new Error(error.message);
 }
+
+export async function removeBlobs(paths: Array<string | null | undefined>): Promise<void> {
+  const existing = paths.filter((path): path is string => Boolean(path));
+  if (!existing.length) return;
+  const { error } = await getSupabaseAdmin().storage.from(STORAGE_BUCKET).remove(existing);
+  if (error) throw new Error(error.message);
+}
