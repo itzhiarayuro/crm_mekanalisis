@@ -16,6 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { data: contract, error } = await supabase.from("contracts").select("*").eq("id", id).single();
     if (error || !contract) throw new Error("Contrato no encontrado");
     if (!['READY', 'PENDING'].includes(contract.status)) throw new Error("El contrato no está listo para enviar");
+    if (!contract.signer_email) throw new Error("El cliente no tiene correo. Actualice su ficha antes de enviar a firma");
     const token = randomToken();
     const now = new Date();
     const { error: updateError } = await supabase.from("contracts").update({

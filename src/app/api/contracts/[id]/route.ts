@@ -9,11 +9,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const supabase = getSupabaseAdmin();
     const [{ data: contract, error }, { data: events }] = await Promise.all([
-      supabase.from("contracts").select("*, clients(*)").eq("id", id).single(),
+      supabase.from("contracts").select("*, clients:clientes(id,nombre,empresa,email), quote:cotizaciones(id,numero,proyecto)").eq("id", id).single(),
       supabase.from("contract_events").select("*").eq("contract_id", id).order("id"),
     ]);
     if (error || !contract) throw new Error("Contrato no encontrado");
-    return Response.json({ ...contract, events: events || [] });
+    return Response.json({ ...contract, clients: contract.clients ? { name: contract.clients.nombre, company: contract.clients.empresa, email: contract.clients.email } : null, events: events || [] });
   } catch (error) { return apiError(error); }
 }
 

@@ -8,15 +8,28 @@ import { convertDocxToPdf } from "@/lib/converter";
 import { sha256 } from "@/lib/crypto";
 import { appendEvent } from "@/lib/audit";
 
-const schema = z.object({ title: z.string().trim().min(3).max(200), clientId: z.uuid(), uploadPath: z.string().regex(/^uploads\/[a-f0-9-]+\/original\.docx$/) });
+const schema = z.object({ title: z.string().trim().min(3).max(200), clientId: z.uuid(), quoteId: z.uuid().optional().nullable(), uploadPath: z.string().regex(/^uploads\/[a-f0-9-]+\/original\.docx$/) });
+
+type ContractClientRelation = {
+  nombre: string;
+  email: string | null;
+  empresa: string | null;
+};
+
+function normalizeClientRelation(row: { clients: ContractClientRelation | null; [key: string]: unknown }) {
+  return {
+    ...row,
+    clients: row.clients ? { name: row.clients.nombre, email: row.clients.email, company: row.clients.empresa } : null,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
     await requireAdminRequest(request);
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase.from("contracts").select("*, clients(name,email,company)").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("contracts").select("*, clients:clientes(nombre,email,empresa), quote:cotizaciones(id,numero,proyecto)").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return Response.json(data);
+    return Response.json((data || []).map(normalizeClientRelation));
   } catch (error) { return apiError(error); }
 }
 
@@ -25,10 +38,14 @@ export async function POST(request: NextRequest) {
     await requireAdminRequest(request);
     const body = schema.parse(await request.json());
     const supabase = getSupabaseAdmin();
-    const { data: client, error: clientError } = await supabase.from("clients").select("*").eq("id", body.clientId).single();
+    const { data: client, error: clientError } = await supabase.from("clientes").select("*").eq("id", body.clientId).single();
     if (clientError || !client) throw new Error("Cliente no encontrado");
+    if (body.quoteId) {
+      const { data: quote, error: quoteError } = await supabase.from("cotizaciones").select("id").eq("id", body.quoteId).eq("cliente_id", body.clientId).maybeSingle();
+      if (quoteError || !quote) throw new Error("La cotización no pertenece al cliente seleccionado");
+    }
     const { data: contract, error } = await supabase.from("contracts").insert({
-      client_id: body.clientId, title: body.title, status: "PROCESSING", signer_name: client.name,
+      client_id: body.clientId, cotizacion_id: body.quoteId || null, title: body.title, status: "PROCESSING", signer_name: client.nombre,
       signer_email: client.email, original_path: body.uploadPath,
     }).select().single();
     if (error) throw new Error(error.message);

@@ -11,9 +11,12 @@ export type ContractStatus =
 export interface Client {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   company: string | null;
   phone: string | null;
+  type: string | null;
+  source: string | null;
+  status: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

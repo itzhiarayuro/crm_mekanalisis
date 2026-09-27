@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/status-badge";
 export const dynamic = "force-dynamic";
 export default async function Dashboard(){
   const supabase=getSupabaseAdmin();
-  const [{data:contracts},{count:clients}]=await Promise.all([supabase.from('contracts').select('id,title,status,signer_name,created_at').order('created_at',{ascending:false}).limit(6),supabase.from('clients').select('id',{count:'exact',head:true})]);
+  const [{data:contracts},{count:clients}]=await Promise.all([supabase.from('contracts').select('id,title,status,signer_name,created_at').order('created_at',{ascending:false}).limit(6),supabase.from('clientes').select('id',{count:'exact',head:true})]);
   const rows=contracts||[]; const all=await supabase.from('contracts').select('status'); const stats=all.data||[];
   return <><div className="flex justify-between items-start gap-4 mb-7"><div><h1 className="text-3xl font-extrabold">Resumen</h1><p className="muted mt-1">Contratos, clientes y actividad reciente.</p></div><Link className="btn btn-primary" href="/admin/contratos/nuevo">Nuevo contrato</Link></div>
   <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8"><Stat icon={<Files/>} label="Contratos" value={stats.length}/><Stat icon={<Send/>} label="Pendientes" value={stats.filter(x=>x.status==='PENDING').length}/><Stat icon={<FileCheck2/>} label="Firmados" value={stats.filter(x=>x.status==='SIGNED').length}/><Stat icon={<Users/>} label="Clientes" value={clients||0}/></div>

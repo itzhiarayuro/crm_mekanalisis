@@ -1,27 +1,25 @@
+-- This CRM is installed in the existing Bd_clientes project. `clientes` remains
+-- the canonical customer table; contract data is additive and never duplicates it.
 create extension if not exists pgcrypto;
 
-create type contract_status as enum (
-  'DRAFT', 'PROCESSING', 'READY', 'PENDING', 'SIGNED', 'EXPIRED', 'REVOKED', 'FAILED'
-);
+do $$
+begin
+  create type contract_status as enum (
+    'DRAFT', 'PROCESSING', 'READY', 'PENDING', 'SIGNED', 'EXPIRED', 'REVOKED', 'FAILED'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
-create table clients (
+create table if not exists contracts (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
-  email text not null,
-  company text,
-  phone text,
-  notes text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table contracts (
-  id uuid primary key default gen_random_uuid(),
-  client_id uuid not null references clients(id) on delete restrict,
+  client_id uuid not null references clientes(id) on delete restrict,
+  cotizacion_id uuid references cotizaciones(id) on delete set null,
   title text not null,
   status contract_status not null default 'DRAFT',
+  -- A signing snapshot is populated from clientes when the contract is created.
   signer_name text not null,
-  signer_email text not null,
+  signer_email text,
   original_path text,
   pdf_path text,
   signed_path text,
@@ -47,7 +45,7 @@ create table contracts (
   updated_at timestamptz not null default now()
 );
 
-create table contract_events (
+create table if not exists contract_events (
   id bigint generated always as identity primary key,
   contract_id uuid not null references contracts(id) on delete cascade,
   type text not null,
@@ -59,17 +57,16 @@ create table contract_events (
   created_at timestamptz not null default now()
 );
 
-create index contracts_client_idx on contracts(client_id);
-create index contracts_status_idx on contracts(status);
-create index contracts_token_hash_idx on contracts(token_hash);
-create index contract_events_contract_idx on contract_events(contract_id, id);
+create index if not exists contracts_client_idx on contracts(client_id);
+create index if not exists contracts_cotizacion_idx on contracts(cotizacion_id);
+create index if not exists contracts_status_idx on contracts(status);
+create index if not exists contracts_token_hash_idx on contracts(token_hash);
+create index if not exists contract_events_contract_idx on contract_events(contract_id, id);
 
-alter table clients enable row level security;
 alter table contracts enable row level security;
 alter table contract_events enable row level security;
 
--- No public policies: the application accesses these tables only with the service-role key.
-
+-- No public policies: the server accesses contract data only through its secret key.
 insert into storage.buckets (id, name, public)
 values ('contracts', 'contracts', false)
 on conflict (id) do update set public = false;
