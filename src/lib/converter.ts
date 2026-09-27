@@ -6,11 +6,12 @@ import { spawn } from "node:child_process";
 export async function convertDocxToPdf(docx: Buffer): Promise<Buffer> {
   const dir = await mkdtemp(path.join(tmpdir(), "crm-docx-"));
   const input = path.join(dir, "contrato.docx");
+  const profile = path.join(dir, "libreoffice-profile");
   try {
     await writeFile(input, docx);
     await run(
       process.env.SOFFICE_PATH || "soffice",
-      ["--headless", "--safe-mode", "--convert-to", "pdf", "--outdir", dir, input],
+      ["--headless", `-env:UserInstallation=file://${profile}`, "--convert-to", "pdf", "--outdir", dir, input],
       Number(process.env.CONVERSION_TIMEOUT_MS || 120_000),
     );
     return await readFile(path.join(dir, "contrato.pdf"));
