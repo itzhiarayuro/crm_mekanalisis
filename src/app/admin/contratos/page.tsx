@@ -1,0 +1,8 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
+import { StatusBadge } from "@/components/status-badge";
+
+type Row={id:string;title:string;status:string;signer_name:string;signer_email:string;created_at:string;clients?:{company?:string|null}};
+export default function ContractsPage(){const [rows,setRows]=useState<Row[]>([]);const [loading,setLoading]=useState(true);useEffect(()=>{fetch('/api/contracts').then(r=>r.json()).then(setRows).finally(()=>setLoading(false))},[]);return <><div className="flex justify-between items-start gap-4 mb-7"><div><h1 className="text-3xl font-extrabold">Contratos</h1><p className="muted mt-1">Seguimiento de preparación y firma.</p></div><Link className="btn btn-primary" href="/admin/contratos/nuevo"><Plus size={18}/>Nuevo contrato</Link></div><section className="card overflow-hidden">{loading?<p className="p-8 muted">Cargando…</p>:rows.length===0?<p className="p-8 muted text-center">No hay contratos todavía.</p>:<div className="divide-y divide-slate-100">{rows.map(row=><Link href={`/admin/contratos/${row.id}`} key={row.id} className="p-4 grid md:grid-cols-[1.5fr_1fr_auto] gap-3 items-center hover:bg-slate-50"><div><p className="font-bold">{row.title}</p><p className="muted text-sm">{row.clients?.company||row.signer_name}</p></div><div className="text-sm"><p>{row.signer_email}</p><p className="muted">{new Date(row.created_at).toLocaleDateString('es-CO')}</p></div><StatusBadge status={row.status}/></Link>)}</div>}</section></>}

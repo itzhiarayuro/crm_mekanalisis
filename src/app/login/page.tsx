@@ -1,0 +1,9 @@
+"use client";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FileSignature } from "lucide-react";
+export default function LoginPage() {
+  const router = useRouter(); const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
+  async function submit(event:FormEvent<HTMLFormElement>) { event.preventDefault(); setLoading(true); setError(""); const form=new FormData(event.currentTarget); const response=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:form.get("email"),password:form.get("password")})}); const body=await response.json(); setLoading(false); if(!response.ok){setError(body.error||"No fue posible iniciar sesión");return;} router.push("/admin"); router.refresh(); }
+  return <main className="min-h-screen grid place-items-center p-5"><section className="card w-full max-w-md p-8"><div className="flex items-center gap-3 mb-8"><div className="h-12 w-12 rounded-xl bg-teal-700 text-white grid place-items-center"><FileSignature/></div><div><h1 className="text-xl font-extrabold">Mekanálisis</h1><p className="muted text-sm">CRM de contratos</p></div></div><h2 className="text-2xl font-extrabold mb-2">Acceso privado</h2><p className="muted mb-6">Ingrese con la cuenta administradora.</p><form onSubmit={submit} className="space-y-4"><label><span className="label">Correo</span><input className="input" name="email" type="email" required autoComplete="email"/></label><label><span className="label">Contraseña</span><input className="input" name="password" type="password" required autoComplete="current-password"/></label>{error&&<p className="text-sm text-red-700 bg-red-50 p-3 rounded-lg">{error}</p>}<button className="btn btn-primary w-full" disabled={loading}>{loading&&<span className="spinner"/>}{loading?"Ingresando…":"Ingresar"}</button></form></section></main>;
+}

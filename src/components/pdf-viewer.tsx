@@ -1,0 +1,7 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+export function PdfViewer({url,onEnd}:{url:string;onEnd:()=>void}){const [pages,setPages]=useState(0);const [width,setWidth]=useState(760);const sentinel=useRef<HTMLDivElement>(null);useEffect(()=>{const resize=()=>setWidth(Math.min(760,window.innerWidth-32));resize();window.addEventListener('resize',resize);return()=>window.removeEventListener('resize',resize)},[]);useEffect(()=>{const node=sentinel.current;if(!node)return;const observer=new IntersectionObserver(entries=>{if(entries[0]?.isIntersecting)onEnd()},{threshold:.8});observer.observe(node);return()=>observer.disconnect()},[pages,onEnd]);return <Document file={url} onLoadSuccess={({numPages})=>setPages(numPages)} loading={<p className="p-10 text-center">Cargando documento…</p>} error={<p className="p-10 text-red-700">No fue posible mostrar el PDF.</p>}>{Array.from({length:pages},(_,i)=><div className="mb-4 shadow-lg" key={i}><p className="bg-slate-900 text-white text-xs px-3 py-2">Página {i+1} de {pages}</p><Page pageNumber={i+1} width={width} renderAnnotationLayer renderTextLayer/></div>)}<div ref={sentinel} className="h-16 grid place-items-center font-bold text-teal-800">Fin del documento</div></Document>}

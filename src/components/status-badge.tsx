@@ -1,0 +1,1 @@
+export function StatusBadge({status}:{status:string}){const labels:Record<string,string>={DRAFT:'Borrador',PROCESSING:'Convirtiendo',READY:'Listo',PENDING:'Pendiente',SIGNED:'Firmado',EXPIRED:'Vencido',REVOKED:'Revocado',FAILED:'Error'};return <span className={`badge badge-${status}`}>{labels[status]||status}</span>}
